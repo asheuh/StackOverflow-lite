@@ -12,7 +12,8 @@ from stackoverflow.api.v1.auth.parsers import pagination_arguments
 from stackoverflow import v2_api
 from stackoverflow.api.v2.auth.serializers import (
     user_register,
-    user_login
+    user_login,
+    questions
 )
 from ..errors import check_valid_email, user_is_valid
 from stackoverflow.api.v2.models import User, BlackList

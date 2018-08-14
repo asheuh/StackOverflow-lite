@@ -1,7 +1,8 @@
 from flask import json
 from stackoverflow.api.v1.models import (
     MainModel,
-    User
+    User,
+    Question
 )
 from datetime import datetime
 from stackoverflow import v2_db
@@ -100,6 +101,38 @@ class User(User, DatabaseCollector):
                 self.email,
                 self.password_hash,
                 self.registered_on
+            )
+        )
+        super().insert()
+
+class Question(Question, DatabaseCollector):
+    __table__ = "questions"
+
+    @classmethod
+    def migrate(cls):
+        v2_db.cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS questions(
+                id serial PRIMARY KEY,
+                title VARCHAR,
+                description VARCHAR,
+                created_by INTEGER,
+                date_created timestamp,
+                FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE
+            )
+            """
+        )
+        v2_db.connection.commit()
+
+    def insert(self):
+        """save to the database"""
+        v2_db.cursor.execute(
+            "INSERT INTO questions(title, description, created_by,"
+            "date_created) VALUES(%s, %s, %s, %s) RETURNING id", (
+                self.title,
+                self.description,
+                self.created_by,
+                self.date_created
             )
         )
         super().insert()
