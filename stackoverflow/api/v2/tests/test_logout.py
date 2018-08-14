@@ -24,7 +24,6 @@ class TestLogout(BaseTestCase):
                 )
             )
             data = json.loads(response.data.decode())
-            print(data)
             self.assertTrue(data['status'] == 'success')
             self.assertTrue(data['message'] == 'Access token has been revoked, you are now logged out')
             self.assertEqual(response.status_code, 200)

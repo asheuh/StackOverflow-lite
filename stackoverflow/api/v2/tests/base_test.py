@@ -13,4 +13,4 @@ class BaseTestCase(TestCase):
 
     def tearDown(self):
         """removes the db and the context"""
-        self.migrate.tear_down()
+        self.migrate.drop_tables()

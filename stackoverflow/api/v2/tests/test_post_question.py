@@ -32,3 +32,46 @@ class TestUserQuestions(BaseTestCase):
             self.assertTrue(response_data['message'] == 'Question posted successfully')
             self.assertEqual(response.status_code, 201)
 
+    def test_user_can_post_answer_to_a_question(self):
+        with self.client:
+            resp_register = self.client.post(
+                '/api/v2/auth/register',
+                data=json.dumps(dict(
+                    name='Brian Mboya',
+                    email='asheuh@gmail.com',
+                    username='asheuh',
+                    password='mermaid'
+                )),
+                content_type='application/json'
+            )
+            response = self.client.post(
+                '/api/v2/questions',
+                headers=dict(
+                    Authorization='Bearer ' + json.loads(
+                        resp_register.data.decode()
+                    )['Authorization']['access_token']
+                ),
+                data=json.dumps(dict(
+                    title='Flask Cli',
+                    description='How to create cli project in flask?'
+                )),
+                content_type='application/json'
+            )
+            resp = self.client.post(
+                '/api/v2/questions/1/answers',
+                headers=dict(
+                    Authorization='Bearer ' + json.loads(
+                        resp_register.data.decode()
+                    )['Authorization']['access_token']
+                ),
+                data=json.dumps(dict(
+                    answer='Use click cli'
+                )),
+                content_type='application/json'
+            )
+            response_data = json.loads(resp.data.decode())
+            print(response_data)
+            self.assertTrue(response_data['status'] == 'success')
+            self.assertTrue(response_data['message'] == 'Answer posted successfully')
+            self.assertEqual(resp.status_code, 201)
+
