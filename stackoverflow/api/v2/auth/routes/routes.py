@@ -15,7 +15,7 @@ from stackoverflow.api.v2.auth.serializers import (
     user_login
 )
 from ..errors import check_valid_email, user_is_valid
-from stackoverflow.api.v2.models import User
+from stackoverflow.api.v2.models import User, BlackList
 from stackoverflow import settings
 
 flask_bcrypt = Bcrypt()
@@ -107,4 +107,17 @@ class UserLogoutResourceAccess(Resource):
     def post(self):
         # get auth token
         """Logout a user"""
-        pass
+        jti = get_raw_jwt()['jti']
+        try:
+            blacklist_token = BlackList(jti=jti)
+            blacklist_token.insert()
+            response = {
+                'status': 'success',
+                'message': 'Access token has been revoked, you are now logged out'
+            }
+            return response, 200
+        except Exception as e:
+            response = {
+                'message': 'could not generat access token: {}'.format(e)
+            }
+            return response
