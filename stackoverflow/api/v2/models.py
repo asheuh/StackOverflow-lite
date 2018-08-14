@@ -10,17 +10,20 @@ class DatabaseCollector(MainModel):
     """This is the base model"""
     __table__ = ""
 
-    def to_json_object(self, item):
+    @classmethod
+    def to_json_object(cls, item):
         """Creates a model object"""
         return json.loads(json.dumps(item, indent=4, sort_keys=True, default=str))
 
-    def get_all(self):
+    @classmethod
+    def get_all(cls):
         """Get all the items in the database"""
-        v2_db.cursor.execute("SELECT * FROM {}".format(self.__table__))
+        v2_db.cursor.execute("SELECT * FROM {}".format(cls.__table__))
         items = v2_db.cursor.fetchall()
-        return [self.to_json_object(item) for item in items]
+        return [cls.to_json_object(item) for item in items]
 
-    def get_by_field(self, field, value):
+    @classmethod
+    def get_by_field(cls, field, value):
         """
         Get an item from the database by its key or field
         if cls.get_all() is None:
@@ -29,27 +32,30 @@ class DatabaseCollector(MainModel):
             if item[field] == value:
                 return item
         """
-        v2_db.cursor.execute("SELECT * FROM {0} WHERE {1} = %s".format(self.__table__, field), (value,))
+        v2_db.cursor.execute("SELECT * FROM {0} WHERE {1} = %s".format(cls.__table__, field), (value,))
         items = v2_db.cursor.fetchall()
-        return [self.to_json_object(item) for item in items]
+        return [cls.to_json_object(item) for item in items]
 
-    def get_one_by_field(self, field, value):
-        items = self.get_by_field(field, value)
+    @classmethod
+    def get_one_by_field(cls, field, value):
+        items = cls.get_by_field(field, value)
         if len(items) == 0:
             return None
         return items[0]
 
-    def get_item_by_id(self, _id):
+    @classmethod
+    def get_item_by_id(cls, _id):
         """Retrieves an item by the id provided"""
-        v2_db.cursor.execute("SELECT * FROM {} WHERE id = %s".format(self.__table__), (_id,))
+        v2_db.cursor.execute("SELECT * FROM {} WHERE id = %s".format(cls.__table__), (_id,))
         item = v2_db.cursor.fetchone()
         if item is None:
             return None
-        return self.to_json_object(item)
+        return cls.to_json_object(item)
 
-    def rollback(self):
+    @classmethod
+    def rollback(cls):
         """Deletes all the data from the tables"""
-        v2_db.cursor.execute("DELETE FROM {}".format(self.__table__))
+        v2_db.cursor.execute("DELETE FROM {}".format(cls.__table__))
         v2_db.connection.commit()
 
     def insert(self):
@@ -59,9 +65,10 @@ class DatabaseCollector(MainModel):
             self.id = result['id']
         v2_db.connection.commit()
 
-    def delete(self):
+    @classmethod
+    def delete(cls):
         """deletes an item from the database"""
-        v2_db.cursor.execute("SELECT * FROM {} WHERE id = %s".format(self.__table__), (self.id))
+        v2_db.cursor.execute("SELECT * FROM {} WHERE id = %s".format(cls.__table__), (cls.id))
         v2_db.connection.commit()
 
 class User(User, DatabaseCollector):
