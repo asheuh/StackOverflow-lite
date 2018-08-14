@@ -2,7 +2,8 @@ from flask import json
 from stackoverflow.api.v1.models import (
     MainModel,
     User,
-    Question
+    Question,
+    Answer
 )
 from datetime import datetime
 from stackoverflow import v2_db
@@ -12,7 +13,7 @@ class DatabaseCollector(MainModel):
     __table__ = ""
 
     @classmethod
-    def to_json_object(cls, item):
+    def to_json(cls, item):
         """Creates a model object"""
         return json.loads(json.dumps(item, indent=4, sort_keys=True, default=str))
 
@@ -21,7 +22,7 @@ class DatabaseCollector(MainModel):
         """Get all the items in the database"""
         v2_db.cursor.execute("SELECT * FROM {}".format(cls.__table__))
         items = v2_db.cursor.fetchall()
-        return [cls.to_json_object(item) for item in items]
+        return [cls.to_json(item) for item in items]
 
     @classmethod
     def get_by_field(cls, field, value):
@@ -35,7 +36,7 @@ class DatabaseCollector(MainModel):
         """
         v2_db.cursor.execute("SELECT * FROM {0} WHERE {1} = %s".format(cls.__table__, field), (value,))
         items = v2_db.cursor.fetchall()
-        return [cls.to_json_object(item) for item in items]
+        return [cls.to_json(item) for item in items]
 
     @classmethod
     def get_one_by_field(cls, field, value):
@@ -51,12 +52,18 @@ class DatabaseCollector(MainModel):
         item = v2_db.cursor.fetchone()
         if item is None:
             return None
-        return cls.to_json_object(item)
+        return cls.to_json(item)
 
     @classmethod
     def rollback(cls):
         """Deletes all the data from the tables"""
         v2_db.cursor.execute("DELETE FROM {}".format(cls.__table__))
+        v2_db.connection.commit()
+
+    @classmethod
+    def drop_all(cls):
+        """Drops all the tables"""
+        v2_db.cursor.execute("DROP TABLE {}".format(cls.__table__))
         v2_db.connection.commit()
 
     def insert(self):
@@ -136,6 +143,42 @@ class Question(Question, DatabaseCollector):
             )
         )
         super().insert()
+
+class Answer(Answer, DatabaseCollector):
+    __table__ = "answers"
+
+    @classmethod
+    def migrate(cls):
+        v2_db.cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS answers(
+                id serial PRIMARY KEY,
+                answer VARCHAR,
+                accepted BOOL,
+                votes INTEGER,
+                owner INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                question INTEGER REFERENCES questions(id) ON DELETE CASCADE,
+                date_created timestamp
+            )
+            """
+        )
+        v2_db.connection.commit()
+
+    def insert(self):
+        """save to the database"""
+        v2_db.cursor.execute(
+            "INSERT INTO answers(answer, accepted, votes, owner,"
+            "question, date_created) VALUES(%s, %s, %s, %s, %s, %s) RETURNING id", (
+                self.answer,
+                self.accepted,
+                self.votes,
+                self.owner,
+                self.question,
+                self.date_created
+            )
+        )
+        super().insert()
+
 
 class BlackList(DatabaseCollector):
     __table__ = "blacklist"

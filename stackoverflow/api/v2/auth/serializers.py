@@ -52,3 +52,7 @@ questions = v2_api.model('Question Model', {
     'description': fields.String(required=True, default='How to write serializers?', description='question description')
 })
 
+answers = v2_api.model('Answer Model', {
+    'answer': fields.String(required=True, default='create a dictionary of data', description='answer description')
+})
+
